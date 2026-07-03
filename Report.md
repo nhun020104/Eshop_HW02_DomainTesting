@@ -211,3 +211,78 @@ Bảng dưới đây thiết kế các test case bám sát các yêu cầu giao 
 Khoảng trống 1: Lỗi logic nghiệp vụ - Trùng lặp dữ liệu (Business Logic - Duplicate Data): BVA và Domain Testing chỉ kiểm tra xem một chuỗi đơn lẻ nhập vào có hợp lệ hay không. Các kỹ thuật này hoàn toàn bỏ sót kịch bản: Nếu thêm mới một danh mục có tên trùng hoàn toàn với một danh mục đã tồn tại từ trước thì sao? Hệ thống thực tế có chặn trùng để bảo vệ toàn vẹn dữ liệu, hay sẽ tạo ra hai danh mục giống hệt nhau gây loạn luồng xử lý?
 
 Khoảng trống 2: Lỗi trải nghiệm và Đồng bộ trạng thái giao diện (UI/UX & State Synchronization): Khi một danh mục được thêm mới thành công qua API Backend, giao diện Frontend (Web Admin) có tự động làm mới (re-render) để cập nhật danh mục đó vào bảng danh sách ngay lập tức không? Hay người dùng phải F5/tải lại trang thủ công thì mới thấy? Các kỹ thuật lý thuyết không thể dự đoán được hành vi phản hồi thời gian thực này của UI.
+
+
+
+---
+
+### Tính năng FR-14: Quản lý Danh mục (Web Admin)
+
+#### a. Áp dụng kỹ thuật Kiểm thử miền (Domain Testing)
+
+## 1. Xác định biến đầu vào, kiểu dữ liệu và ràng buộc
+
+Dựa trên đặc tả FR-04 và các quy tắc hệ thống thực tế, chúng ta có 2 biến đầu vào chính khi người dùng tiến hành cập nhật hồ sơ cá nhân:
+
+1. **Biến `full_name` (Họ và tên):**
+* **Kiểu dữ liệu:** Chuỗi ký tự (String).
+* **Ràng buộc đặc tả:** Bắt buộc nhập.
+* **Ràng buộc ngầm định:** Phải hỗ trợ tiếng Việt Unicode có dấu, có khoảng trắng giữa các từ. Để an toàn hệ thống, ta giả định giới hạn kỹ thuật tối đa là 100 ký tự.
+
+
+2. **Biến `phone_number` (Số điện thoại):**
+* **Kiểu dữ liệu:** Chuỗi số (String/Numeric string - vì số điện thoại thường có số 0 ở đầu nên lưu dạng chuỗi để tránh mất số 0).
+* **Ràng buộc đặc tả:** Bắt buộc nhập, phải bắt đầu bằng số `0`, độ dài từ **10 đến 11 chữ số** (theo đúng text mô tả trong FR-04).
+
+
+
+---
+
+## 2. Phân chia các miền/vùng tương đương (Equivalence Partitioning)
+
+Để đảm bảo độ bao phủ tuyệt đối, ta chia các phân vùng tương đương dựa trên 3 khía cạnh: Độ dài, Loại ký tự, và Bảo mật.
+
+### Đối với biến `full_name` (Họ và tên)
+
+#### Khía cạnh 1: Độ dài chuỗi (String Length)
+
+* **Mã vùng V_FN1 (Valid):** Chuỗi có độ dài hợp lệ (Từ 1 đến 100 ký tự). *Ví dụ: "Nguyen Van A"*.
+* **Mã vùng IV_FN1 (Invalid):** Chuỗi trống hoàn toàn (Empty `""`). *Ý nghĩa: Kiểm tra ràng buộc bắt buộc nhập*.
+* **Mã vùng IV_FN2 (Invalid):** Chuỗi chỉ chứa toàn khoảng trắng (`"    "`). *Ý nghĩa: Kiểm tra xem hệ thống có cắt khoảng trắng (trim) không*.
+* **Mã vùng IV_FN3 (Invalid):** Chuỗi vượt quá giới hạn an toàn hệ thống (Từ 101 ký tự trở lên). *Ý nghĩa: Kiểm tra bẫy lỗi hiển thị UI hoặc tràn DB*.
+
+#### Khía cạnh 2: Loại ký tự (Character Types)
+
+* **Mã vùng V_FN2 (Valid):** Chuỗi ký tự chữ Tiếng Việt có dấu và khoảng trắng phân cách đúng chuẩn chuẩn UTF-8. *Ví dụ: "Trần Nguyễn Hoàng Anh"*.
+* **Mã vùng IV_FN4 (Invalid):** Chuỗi có chứa các ký tự số. *Ví dụ: "Nguyen Van A 123"*. (Họ tên thực tế không bao gồm số).
+* **Mã vùng IV_FN5 (Invalid):** Chuỗi chứa các ký tự đặc biệt vô nghĩa. *Ví dụ: "Nguyen@Van#A"*.
+
+#### Khía cạnh 3: Bảo mật & Lỗi hệ thống (Security)
+
+* **Mã vùng IV_FN6 (Invalid):** Chuỗi chứa mã Script gây lỗ hổng XSS. *Ví dụ: `<script>alert(1)</script>*`. (Cực kỳ nguy hiểm nếu tên này hiển thị trên thanh Header hoặc màn hình Admin mà không được mã hóa).
+* **Mã vùng IV_FN7 (Invalid):** Chuỗi chứa câu lệnh SQL Injection. *Ví dụ: `Admin' OR '1'='1*`.
+
+---
+
+### Đối với biến `phone_number` (Số điện thoại)
+
+#### Khía cạnh 1: Độ dài chuỗi (String Length)
+
+* **Mã vùng V_PN1 (Valid):** Chuỗi số có độ dài 10 chữ số. *Ví dụ: "0912345678"*.
+* **Mã vùng V_PN2 (Valid):** Chuỗi số có độ dài 11 chữ số (Vẫn cần test do đặc tả ghi rõ 10-11 số). *Ví dụ: "01234567890"*.
+* **Mã vùng IV_PN1 (Invalid):** Chuỗi trống không nhập gì.
+* **Mã vùng IV_PN2 (Invalid):** Chuỗi số quá ngắn (Dưới 10 chữ số). *Ví dụ: "0912345"*.
+* **Mã vùng IV_PN3 (Invalid):** Chuỗi số quá dài (Từ 12 chữ số trở lên). *Ví dụ: "09123456789012"*.
+
+#### Khía cạnh 2: Loại ký tự & Định dạng đầu số (Character Types & Format)
+
+* **Mã vùng IV_PN4 (Invalid):** Chuỗi số không bắt đầu bằng số `0` ở đầu. *Ví dụ: "1912345678"*.
+* **Mã vùng IV_PN5 (Invalid):** Chuỗi chứa các ký tự chữ cái hoặc khoảng trắng xen kẽ. *Ví dụ: "0912 345abc"*.
+* **Mã vùng IV_PN6 (Invalid):** Chuỗi chứa ký tự đặc biệt. *Ví dụ: "0912-345-678"* hoặc `+84912345678` (Mặc dù +84 hợp lệ thực tế nhưng đặc tả FR-04 ghi rõ "bắt đầu bằng số 0" nên dạng +84 sẽ bị coi là Invalid theo đặc tả).
+
+#### Khía cạnh 3: Bảo mật & Hệ thống (Security)
+
+* **Mã vùng IV_PN7 (Invalid):** Gửi giá trị `null` hoặc `undefined` trực tiếp qua API payload của request cập nhật hồ sơ để test khả năng bẫy lỗi phía Backend.
+
+---
+
