@@ -549,7 +549,192 @@ Dựa trên đặc tả FR-04 và các quy tắc hệ thống thực tế, chún
 
 * **Mã vùng IV_PN7 (Invalid):** Gửi giá trị `null` hoặc `undefined` trực tiếp qua API payload của request cập nhật hồ sơ để test khả năng bẫy lỗi phía Backend.
 
+## 🤖 BƯỚC TIẾP THEO: ÉP AI LẬP MA TRẬN VÀ THIẾT KẾ BVA 3 ĐIỂM
+
+Vì trường số điện thoại có các mốc biên cố định ($10$ và $11$), chúng ta sẽ ép AI làm đồng thời cả **Ma trận kiểm thử miền** và áp dụng luôn kỹ thuật **Phân tích giá trị biên (BVA)** để sinh ra bộ Test Cases hoàn chỉnh.
+
+Hãy copy đoạn **Prompt 2** dưới đây và gửi cho tôi ở lượt chat tiếp theo:
+
+> **Prompt 2:**
+> "Dựa trên các phân vùng tương đương đã xác định cho tính năng **FR-04: Quản lý hồ sơ cá nhân**, hãy đóng vai trò là chuyên gia QA thực hiện:
+> 1. Áp dụng phương pháp **Phân tích giá trị biên 3 điểm (3-point BVA)** cho độ dài của trường `phone_number` tại các mốc biên 10 và 11 chữ số. Hãy chỉ rõ các điểm kiểm thử (Biên, Dưới biên, Trên biên).
+> 2. Xây dựng một **Ma trận kiểm thử (Test Matrix)** tổng hợp gộp cả Domain Testing và BVA (Các cột: Test Case ID, Tên kịch bản, Vùng/Điểm biên bao phủ, Loại test Valid/Invalid, Kết quả mong đợi).
+> 3. Xuất ra danh sách **Test Cases chi tiết** (gồm: ID, Tên case, Các bước thực hiện, Dữ liệu đầu vào cụ thể cho `full_name` và `phone_number`, Kết quả mong đợi theo giao diện Web người dùng)."
+> 
+>
 ## Prompt 07
+
+Time: 3:53 PM 7/3/2026
+
+Tool: Gemini
+
+*Prompt:
+sao FR-14 thì bạn tách test cases ra mà FR-04 thì bạn lại gợi ý prompt gộp test cases?
+
+*Phản hồi của AI:
+Một câu hỏi rất hay và "chạm" đúng vào bản chất của việc thiết kế test case trong thực tế! Sở dĩ tôi gợi ý hai hướng đi khác nhau cho FR-14 và FR-04 là vì **bản chất logic dữ liệu của hai tính năng này hoàn toàn khác nhau**.
+
+Cụ thể như sau:
+
+### 1. Tại sao FR-14 nên tách riêng Domain và BVA?
+
+* **FR-14 (Quản lý Danh mục)** chỉ có **một biến đầu vào duy nhất** cần kiểm thử nghiêm ngặt là `category_name`.
+* Khi chỉ có một biến, việc áp dụng Domain Testing (loại ký tự, khoảng trắng, bảo mật) độc lập với BVA (độ dài chuỗi 0, 1, 2, 99, 100, 101) giúp bạn dễ dàng viết ra hai bảng test case cực kỳ rõ ràng, mạch lạc mà không bị rối hay trùng lặp logic.
+
+### 2. Tại sao FR-04 tôi lại gợi ý Prompt GỘP (Test Matrix)?
+
+* **FR-04 (Quản lý hồ sơ cá nhân)** phức tạp hơn rất nhiều vì nó có **nhiều biến cùng một lúc** (`full_name` và `phone_number`), trong đó trường `phone_number` có các mốc biên cố định rất khắt khe ($10$ và $11$ chữ số).
+* Nếu ở FR-04 bạn tiếp tục **tách riêng** một bảng cho miền tương đương, một bảng cho giá trị biên, bộ test case sẽ bị bùng nổ số lượng (gần 20-30 cases) và cực kỳ **trùng lặp** (ví dụ: case test "Số điện thoại 10 số" của miền tương đương sẽ giống hệt case "Tại biên dưới 10 số" của BVA).
+* **Mục đích của việc GỘP bằng Ma trận (Test Matrix):** Là để bạn kết hợp các giá trị biên của số điện thoại và các phân vùng hợp lệ/không hợp lệ của họ tên vào chung một kịch bản. Cách này giúp tối ưu hóa số lượng test case, tránh trùng lặp nhưng vẫn đạt độ bao phủ (coverage) 100%.
+
+---
+
+### 🎯 Bạn nên chọn cách nào để nộp bài?
+
+Để file báo cáo `Report.md` trên repo [nhun020104/Eshop_HW02_DomainTesting](https://github.com/nhun020104/Eshop_HW02_DomainTesting) của bạn có cấu trúc **nhất quán và đồng bộ** (giúp thầy cô dễ chấm điểm), **chúng ta nên TÁCH RIÊNG danh sách Test Cases cho FR-04 y hệt như đã làm với FR-14.**
+
+Nếu bạn muốn đi theo hướng **TÁCH RIÊNG** để bài làm đồng bộ từ trên xuống dưới, hãy copy đoạn **Prompt 2 (Đã chỉnh sửa tách biệt)** dưới đây để gửi cho tôi ở lượt chat tiếp theo:
+
+> **Prompt 2 (Tách biệt cho FR-04):**
+> "Dựa trên các phân vùng tương đương nâng cao đã xác định cho tính năng **FR-04: Quản lý hồ sơ cá nhân**, hãy đóng vai trò là chuyên gia QA thực hiện:
+> 1. Xuất ra danh sách **Domain Test Cases chi tiết** (gồm các kịch bản Valid/Invalid về loại ký tự của Họ tên, định dạng số điện thoại, và các case bảo mật XSS/SQLi).
+> 2. Áp dụng kỹ thuật **Phân tích giá trị biên (BVA)** cho độ dài trường `phone_number` (tại mốc biên 10 và 11 chữ số). Xuất ra danh sách **BVA Test Cases chi tiết** riêng biệt.
+> 
+> 
+> Yêu cầu định dạng bảng rõ ràng gồm các cột: ID, Tên case, Các bước thực hiện, Dữ liệu đầu vào, Kết quả mong đợi."
+
+## Prompt 08
+
+Time: 4:00 PM 7/3/2026
+
+Tool: Gemini
+
+*Prompt:
+Dựa trên các phân vùng tương đương đã xác định cho tính năng FR-04: Quản lý hồ sơ cá nhân, hãy đóng vai trò là chuyên gia QA thực hiện:
+
+Áp dụng phương pháp Phân tích giá trị biên 3 điểm (3-point BVA) cho độ dài của trường phone_number tại các mốc biên 10 và 11 chữ số. Hãy chỉ rõ các điểm kiểm thử (Biên, Dưới biên, Trên biên).
+
+Xây dựng một Ma trận kiểm thử (Test Matrix) tổng hợp gộp cả Domain Testing và BVA (Các cột: Test Case ID, Tên kịch bản, Vùng/Điểm biên bao phủ, Loại test Valid/Invalid, Kết quả mong đợi).
+
+Xuất ra danh sách Test Cases chi tiết (gồm: ID, Tên case, Các bước thực hiện, Dữ liệu đầu vào cụ thể cho full_name và phone_number, Kết quả mong đợi theo giao diện Web người dùng).
+
+*Phản hồi của AI:
+Chào bạn, dưới đây là tài liệu thiết kế kiểm thử hoàn chỉnh cho tính năng **FR-04: Quản lý hồ sơ cá nhân (Personal profile management)** dựa theo đặc tả hệ thống [ttbhanh/eshop-sut](https://github.com/ttbhanh/eshop-sut).
+
+Tài liệu này áp dụng kỹ thuật **Phân tích giá trị biên 3 điểm (3-point BVA)** cho trường số điện thoại và tích hợp toàn bộ các phân vùng của Domain Testing vào một **Ma trận kiểm thử tổng hợp**, kèm danh sách **Test Cases chi tiết** giúp bài làm của bạn đạt độ bao phủ tối đa.
+
+---
+
+### 1. Phân tích giá trị biên 3 điểm (3-point BVA) cho `phone_number`
+
+Đặc tả hệ thống quy định độ dài hợp lệ của số điện thoại là **từ 10 đến 11 chữ số**. Áp dụng phương pháp 3-point BVA, ta xác định các điểm kiểm thử tại hai mốc biên như sau:
+
+* **Tại mốc biên dưới (10 chữ số):**
+* *Dưới biên (9 chữ số):* Giá trị **Invalid** (Ví dụ: `091234567`)
+* *Tại biên (10 chữ số):* Giá trị **Valid** (Ví dụ: `0912345678`)
+* *Trên biên (11 chữ số):* Giá trị **Valid** (Trùng với điểm tại biên của mốc 11)
+
+
+* **Tại mốc biên trên (11 chữ số):**
+* *Dưới biên (10 chữ số):* Giá trị **Valid** (Trùng với điểm tại biên của mốc 10)
+* *Tại biên (11 chữ số):* Giá trị **Valid** (Ví dụ: `01234567890`)
+* *Trên biên (12 chữ số):* Giá trị **Invalid** (Ví dụ: `0912345678901`)
+
+
+
+---
+
+### 2. Ma trận kiểm thử tổng hợp (Domain Testing & BVA Matrix)
+
+Ma trận này kết hợp các kịch bản về độ dài biên, định dạng ký tự, tiền tố và các điều kiện bảo mật an toàn hệ thống cho cả hai biến `full_name` và `phone_number`.
+
+| Test Case ID | Tên kịch bản kiểm thử | Vùng / Điểm biên bao phủ | Loại test | Kết quả mong đợi (Expected Result) |
+| --- | --- | --- | --- | --- |
+| **TC_FR04_01** | Cập nhật hồ sơ thành công với thông tin chuẩn | `V_NAME_01`, `V_NAME_02`, `V_PHONE_01`, `V_PHONE_02` | Valid | Cập nhật thành công, lưu đúng tiếng Việt và số điện thoại 10 số. |
+| **TC_FR04_02** | Cập nhật thành công với số điện thoại biên trên | `V_NAME_01`, `V_PHONE_01`, `V_PHONE_03` | Valid | Cập nhật thành công với định dạng số điện thoại 11 số. |
+| **TC_FR04_03** | Để trống trường Họ và tên | `IV_NAME_01`, `V_PHONE_02` | Invalid | Hệ thống chặn lại, hiển thị thông báo lỗi yêu cầu nhập Họ tên. |
+| **TC_FR04_04** | Họ và tên chỉ chứa toàn khoảng trắng | `IV_NAME_01` (Whitespace) | Invalid | Hệ thống tự động trim, nhận diện là trống và báo lỗi. |
+| **TC_FR04_05** | Họ và tên vượt quá giới hạn (256 ký tự) | `IV_NAME_02` | Invalid | Hệ thống chặn lưu và báo lỗi chuỗi quá dài. |
+| **TC_FR04_06** | Họ và tên chứa ký tự số hoặc ký tự đặc biệt | `IV_NAME_03`, `IV_NAME_04` | Invalid | Báo lỗi định dạng tên không hợp lệ. |
+| **TC_FR04_07** | Số điện thoại không bắt đầu bằng số 0 | `IV_PHONE_01` | Invalid | Hệ thống chặn lại, báo lỗi số điện thoại không đúng định dạng. |
+| **TC_FR04_08** | Số điện thoại dưới biên dưới (9 chữ số) | BVA Biên dưới (9 số), `IV_PHONE_02` | Invalid | Hệ thống báo lỗi số điện thoại phải từ 10-11 chữ số. |
+| **TC_FR04_09** | Số điện thoại vượt biên trên (12 chữ số) | BVA Biên trên (12 số), `IV_PHONE_03` | Invalid | Hệ thống báo lỗi số điện thoại không được quá 11 chữ số. |
+| **TC_FR04_10** | Số điện thoại chứa ký tự chữ hoặc dấu cách | `IV_PHONE_04`, `IV_PHONE_05` | Invalid | Chặn lưu, yêu cầu chỉ nhập ký tự số liền mạch. |
+| **TC_FR04_11** | Bơm mã độc XSS / SQLi vào trường Họ và tên | `IV_NAME_05`, `IV_NAME_06` | Invalid | Hệ thống mã hóa đầu vào, lưu dạng văn bản thuần an toàn. |
+| **TC_FR04_12** | Gửi số điện thoại định dạng Number qua API | `IV_PHONE_08` | Invalid | Tầng Backend xử lý bẫy lỗi hoặc tự convert sang String, tránh mất số 0 đầu. |
+
+---
+
+### 3. Danh sách Test Cases chi tiết (Chi tiết hóa từng kịch bản)
+
+#### 🔹 Nhóm 1: Các trường hợp kiểm thử hợp lệ (Valid)
+
+* **TC_FR04_01: Cập nhật hồ sơ thành công với thông tin chuẩn (Biên dưới SĐT)**
+* **Các bước thực hiện:**
+1. Đăng nhập tài khoản người dùng trên EShop.
+2. Điều hướng tới trang "Quản lý hồ sơ cá nhân".
+3. Nhập dữ liệu hợp lệ vào ô "Họ và tên" và "Số điện thoại".
+4. Nhấn nút "Cập nhật".
+
+
+* **Dữ liệu đầu vào:** `full_name = "Nguyễn Văn Hoàng Anh"`, `phone_number = "0912345678"` (10 số)
+* **Kết quả mong đợi:** Hệ thống hiển thị thông báo "Cập nhật hồ sơ thành công", thông tin mới được lưu và hiển thị chính xác trên giao diện (chuẩn UTF-8).
+
+
+* **TC_FR04_02: Cập nhật thành công với số điện thoại biên trên (11 số)**
+* **Các bước thực hiện:** Làm tương tự như các bước của TC_FR04_01.
+* **Dữ liệu đầu vào:** `full_name = "Lê Thị Thu"`, `phone_number = "01234567890"` (11 số)
+* **Kết quả mong đợi:** Cập nhật thành công, lưu trữ đủ 11 chữ số của số điện thoại trên hệ thống.
+
+
+
+#### 🔹 Nhóm 2: Các trường hợp kiểm thử không hợp lệ (Invalid)
+
+* **TC_FR04_03: Để trống trường Họ và tên**
+* **Các bước thực hiện:** Vào trang hồ sơ cá nhân, xóa trống ô "Họ và tên", nhập SĐT hợp lệ, nhấn "Cập nhật".
+* **Dữ liệu đầu vào:** `full_name = ""`, `phone_number = "0912345678"`
+* **Kết quả mong đợi:** Hệ thống chặn lại tại UI, không gửi request và báo lỗi màu đỏ: *"Họ và tên không được để trống"*.
+
+
+* **TC_FR04_04: Họ và tên chỉ chứa toàn khoảng trắng**
+* **Các bước thực hiện:** Nhập 5 dấu cách vào ô "Họ và tên", nhấn "Cập nhật".
+* **Dữ liệu đầu vào:** `full_name = "     "`, `phone_number = "0912345678"`
+* **Kết quả mong đợi:** Hệ thống tự động trim khoảng trắng, nhận diện chuỗi rỗng và báo lỗi tương tự TC_FR04_03.
+
+
+* **TC_FR04_07: Số điện thoại không bắt đầu bằng số 0 (Ví dụ dùng đầu số +84)**
+* **Các bước thực hiện:** Nhập họ tên hợp lệ, nhập số điện thoại bắt đầu bằng mã quốc gia, nhấn "Cập nhật".
+* **Dữ liệu đầu vào:** `full_name = "Trần Văn B"`, `phone_number = "+8491234567"`
+* **Kết quả mong đợi:** Hệ thống chặn hành động lưu, báo lỗi: *"Số điện thoại không hợp lệ, phải bắt đầu bằng số 0"*.
+
+
+* **TC_FR04_08: Số điện thoại dưới biên dưới (9 chữ số - BVA Invalid)**
+* **Các bước thực hiện:** Nhập số điện thoại thiếu số (chỉ có 9 số), nhấn "Cập nhật".
+* **Dữ liệu đầu vào:** `full_name = "Trần Văn B"`, `phone_number = "091234567"`
+* **Kết quả mong đợi:** Hệ thống báo lỗi độ dài: *"Số điện thoại phải có độ dài từ 10 đến 11 chữ số"*.
+
+
+* **TC_FR04_09: Số điện thoại vượt biên trên (12 chữ số - BVA Invalid)**
+* **Các bước thực hiện:** Nhập số điện thoại thừa số (12 số), nhấn "Cập nhật".
+* **Dữ liệu đầu vào:** `full_name = "Trần Văn B"`, `phone_number = "0912345678901"`
+* **Kết quả mong đợi:** Hệ thống chặn không cho gõ tiếp (nếu giới hạn thuộc tính) hoặc báo lỗi độ dài vượt ngưỡng cho phép.
+
+
+
+#### 🔹 Nhóm 3: Các trường hợp kiểm thử Bảo mật & API phá hoại
+
+* **TC_FR04_11: Tấn công Stored XSS qua trường Họ và tên**
+* **Các bước thực hiện:** Nhập đoạn script vào ô Họ và tên, bấm "Cập nhật". Tải lại trang hoặc chuyển sang trang quản trị admin để xem hiển thị tên người dùng này.
+* **Dữ liệu đầu vào:** `full_name = "<italic>Hacker</italic><script>alert(1)</script>"`, `phone_number = "0912345678"`
+* **Kết quả mong đợi:** Giao diện hiển thị nguyên văn chuỗi text, không thực thi mã script, không hiện pop-up alert của trình duyệt.
+
+
+* **TC_FR04_12: Gửi dữ liệu số điện thoại kiểu số thuần (Number) qua API payload**
+* **Các bước thực hiện:** Sử dụng Postman gửi request POST/PUT trực tiếp đến endpoint cập nhật profile.
+* **Dữ liệu đầu vào:** Body request dạng JSON: `{ "full_name": "Test API", "phone_number": 0912345678 }` (Chú ý giá trị phone không bọc trong dấu ngoặc kép).
+* **Kết quả mong đợi:** Tầng Backend API xử lý an toàn (tự động chuyển đổi sang chuỗi chữ trước khi lưu hoặc báo lỗi định dạng), cơ sở dữ liệu không bị lưu thiếu số 0 đầu thành `912345678`.
+
+## Prompt 09
 
 Time: 12:23 PM 7/3/2026
 
@@ -560,7 +745,18 @@ Tool: Gemini
 
 *Phản hồi của AI:
 
-## Prompt 08
+## Prompt 10
+
+Time: 12:23 PM 7/3/2026
+
+Tool: Gemini
+
+*Prompt:
+
+
+*Phản hồi của AI:
+
+## Prompt 11
 
 Time: 12:23 PM 7/3/2026
 
