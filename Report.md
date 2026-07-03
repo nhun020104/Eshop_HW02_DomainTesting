@@ -212,6 +212,25 @@ Khoảng trống 1: Lỗi logic nghiệp vụ - Trùng lặp dữ liệu (Busine
 
 Khoảng trống 2: Lỗi trải nghiệm và Đồng bộ trạng thái giao diện (UI/UX & State Synchronization): Khi một danh mục được thêm mới thành công qua API Backend, giao diện Frontend (Web Admin) có tự động làm mới (re-render) để cập nhật danh mục đó vào bảng danh sách ngay lập tức không? Hay người dùng phải F5/tải lại trang thủ công thì mới thấy? Các kỹ thuật lý thuyết không thể dự đoán được hành vi phản hồi thời gian thực này của UI.
 
+##### Kịch bản 1: Kiểm tra bẫy lỗi trùng tên danh mục (Gap 1)
+Bước 1: Vào mục Quản lý Danh mục, tạo một danh mục hợp lệ tên là Điện tử. Xác nhận danh mục xuất hiện trong danh sách.
+
+Bước 2: Tiếp tục bấm vào nút thêm mới, nhập chính xác chữ Điện tử vào ô Tên danh mục lần thứ hai.
+
+Bước 3: Bấm nút Thêm mới/Lưu và quan sát hệ thống.
+
+Kết quả nếu là Bug: Hệ thống chấp nhận và tạo ra 2 dòng Điện tử giống hệt nhau trong bảng, hoặc tệ hơn là hệ thống bị đứng im và log lỗi sập Database (UNIQUE constraint failed) ở màn hình console backend.
+
+Kết quả mong đợi chuẩn: Hệ thống báo lỗi rõ ràng trên giao diện: "Tên danh mục đã tồn tại".
+
+##### Kịch bản 2: Kiểm tra khả năng tự động đồng bộ UI (Gap 2)
+Bước 1: Vào mục Quản lý Danh mục. Nhập tên danh mục Sách văn học.
+
+Bước 2: Bấm nút Thêm mới và quan sát kỹ bảng danh sách danh mục ở ngay phía dưới mà không được bấm F5 trình duyệt.
+
+Kết quả nếu là Bug: Ô nhập liệu biến mất hoặc xóa trống chữ, hệ thống báo thành công nhưng nhìn xuống bảng danh sách vẫn không thấy dòng Sách văn học đâu. Chỉ khi bạn bấm nút Tải lại trang (F5) thì nó mới hiện ra. (Đây là lỗi rất phổ biến khi lập trình viên quên cập nhật State của React/Vue sau khi gọi API thành công).
+
+Kết quả mong đợi chuẩn: Danh mục mới phải xuất hiện ngay lập tức ở dòng cuối cùng hoặc dòng đầu tiên của bảng danh sách sau khi bấm nút.
 
 
 ---
@@ -396,6 +415,30 @@ Ma trận này kết hợp các kịch bản về độ dài biên, định dạ
 * **Dữ liệu đầu vào:** Body request dạng JSON: `{ "full_name": "Test API", "phone_number": 0912345678 }` (Chú ý giá trị phone không bọc trong dấu ngoặc kép).
 * **Kết quả mong đợi:** Tầng Backend API xử lý an toàn (tự động chuyển đổi sang chuỗi chữ trước khi lưu hoặc báo lỗi định dạng), cơ sở dữ liệu không bị lưu thiếu số 0 đầu thành `912345678`.
 
+#### c. Phân tích khoảng trống AI (AI Gap Analysis)
+Khoảng trống 1: Lỗi bất đồng bộ dữ liệu giữa các phiên làm việc (Session & Data Desynchronization): Domain và BVA chỉ kiểm tra luồng dữ liệu khi người dùng bấm nút "Cập nhật" ở một màn hình tĩnh. Các kỹ thuật này bỏ sót kịch bản: Nếu người dùng đăng nhập tài khoản trên 2 thiết bị (hoặc 2 tab trình duyệt) cùng lúc; tab A đổi tên thành "Nguyễn Văn A", ngay sau đó tab B đổi số điện thoại thành "0912345678" và bấm lưu. Hệ thống sẽ ghi đè toàn bộ thông tin cũ, giữ lại cả hai hay gây ra lỗi xung đột phiên đăng nhập (Session Conflict)?
+
+Khoảng trống 2: Lỗi hiệu ứng phụ trên giao diện hiển thị tổng thể (UI Side-Effects & State Leakage): Khi người dùng cập nhật thành công full_name trong trang cài đặt hồ sơ, các thành phần UI khác của hệ thống đang hiển thị tên người dùng (ví dụ: Chữ "Chào, [Tên_User]" trên thanh Header, tên người mua trong lịch sử đơn hàng) có lập tức đổi theo không? Hay người dùng bắt buộc phải Đăng xuất (Logout) rồi Đăng nhập lại thì UI mới cập nhật đúng?
+
+##### Kịch bản 1: Kiểm tra hiệu ứng đổi tên trên thanh Header (Gap 2)
+Bước 1: Vào mục Quản lý hồ sơ cá nhân, đổi full_name từ tên cũ sang một tên mới (Ví dụ: Hacker Đẹp Trai). Nhấn Cập nhật.
+
+Bước 2: Quan sát góc trên cùng bên phải của thanh điều hướng (Header Navigation Bar) — nơi hiển thị tên tài khoản đang đăng nhập — mà không được bấm F5 (Reload).
+
+Kết quả nếu là Bug: Hệ thống báo "Cập nhật thành công", trong ô nhập liệu đã đổi tên mới, nhưng nhìn lên thanh Header vẫn hiển thị tên cũ xì. (Lập trình viên quên phát sự kiện cập nhật State/Context toàn cục của ứng dụng).
+
+Kết quả mong đợi chuẩn: Tên trên thanh Header phải lập tức đổi thành Hacker Đẹp Trai ngay khi thông báo thành công xuất hiện.
+
+##### Kịch bản 2: Kiểm tra bẫy lỗi Injection phá vỡ định dạng UI 
+Bước 1: Vào mục Quản lý hồ sơ cá nhân.
+
+Bước 2: Nhập vào trường full_name một chuỗi cực kỳ dài không có dấu cách (Ví dụ: A lặp lại 150 lần: AAAAAA...AAAAA).
+
+Bước 3: Bấm Cập nhật, sau đó quay ra trang chủ hoặc trang giỏ hàng nhìn lên thanh Header.
+
+Kết quả nếu là Bug: Thanh điều hướng bị kéo dài ngoằng sang một bên, đẩy các nút khác (Giỏ hàng, Tìm kiếm, Đăng xuất) rớt xuống dòng hoặc biến mất khỏi màn hình do chuỗi không dấu cách không tự động ngắt dòng (word-break).
+
+Kết quả mong đợi chuẩn: Giao diện vẫn giữ nguyên kích thước chuẩn, tên quá dài tự động hiển thị dạng cắt bớt kèm dấu ba chấm (Annnnn...) hoặc tự xuống dòng gọn gàng.
 
 
 ---
