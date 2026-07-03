@@ -206,3 +206,8 @@ Bảng dưới đây thiết kế các test case bám sát các yêu cầu giao 
 
 ---
 
+#### c. Phân tích khoảng trống AI (AI Gap Analysis)
+
+Khoảng trống 1: Lỗi logic nghiệp vụ - Trùng lặp dữ liệu (Business Logic - Duplicate Data): BVA và Domain Testing chỉ kiểm tra xem một chuỗi đơn lẻ nhập vào có hợp lệ hay không. Các kỹ thuật này hoàn toàn bỏ sót kịch bản: Nếu thêm mới một danh mục có tên trùng hoàn toàn với một danh mục đã tồn tại từ trước thì sao? Hệ thống thực tế có chặn trùng để bảo vệ toàn vẹn dữ liệu, hay sẽ tạo ra hai danh mục giống hệt nhau gây loạn luồng xử lý?
+
+Khoảng trống 2: Lỗi trải nghiệm và Đồng bộ trạng thái giao diện (UI/UX & State Synchronization): Khi một danh mục được thêm mới thành công qua API Backend, giao diện Frontend (Web Admin) có tự động làm mới (re-render) để cập nhật danh mục đó vào bảng danh sách ngay lập tức không? Hay người dùng phải F5/tải lại trang thủ công thì mới thấy? Các kỹ thuật lý thuyết không thể dự đoán được hành vi phản hồi thời gian thực này của UI.
