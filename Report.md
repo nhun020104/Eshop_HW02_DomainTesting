@@ -442,3 +442,70 @@ Kết quả mong đợi chuẩn: Giao diện vẫn giữ nguyên kích thước 
 
 
 ---
+
+### Tính năng FR-07: Quản lý Danh mục (Web Admin)
+
+#### a. Áp dụng kỹ thuật Kiểm thử miền (Domain Testing)
+
+## 1. Xác định biến đầu vào, kiểu dữ liệu và ràng buộc
+
+1. **Biến `product_id` (Định danh sản phẩm):**
+* *Kiểu dữ liệu:* Số nguyên hoặc Chuỗi số (Tùy thuộc cơ chế ID tự tăng của SQLite backend).
+* *Ràng buộc:* Bắt buộc có dữ liệu, phải tồn tại trong bảng `products`.
+
+
+2. **Biến `quantity` (Số lượng sản phẩm):**
+* *Kiểu dữ liệu:* Số nguyên (Integer).
+* *Ràng buộc theo đặc tả ([FR-06](https://github.com/ttbhanh/eshop-sut)):* Chỉ nhận số nguyên dương, **tối thiểu là 1**.
+* *Ràng buộc nghiệp vụ ẩn (Stock Constraint):* Số lượng đặt mua phải nhỏ hơn hoặc bằng số lượng tồn kho khả dụng (`quantity <= stock_quantity`).
+
+
+
+---
+
+## 2. Phân chia các miền/vùng tương đương (Equivalence Partitioning)
+
+### 🔹 Đối với biến `quantity` (Số lượng sản phẩm)
+
+#### Khía cạnh 1: Giá trị số học (Numeric Values)
+
+* **V_QTY_01 (Valid):** Số nguyên dương hợp lệ và thỏa mãn tồn kho ($1 \le \text{quantity} \le \text{stock\_quantity}$).
+* **IV_QTY_01 (Invalid):** Số 0 (Vi phạm quy định tối thiểu bằng 1).
+* **IV_QTY_02 (Invalid):** Số nguyên âm (Ví dụ: `-5`, `-1`).
+
+#### Khía cạnh 2: Giới hạn tồn kho (Stock Constraints)
+
+* Giả sử một sản phẩm đang có số lượng tồn kho cố định là $N$ (`stock_quantity = N`).
+* **IV_QTY_03 (Invalid):** Số lượng vượt quá tồn kho thực tế ($\text{quantity} = N + 1$ hoặc lớn hơn hẳn).
+
+#### Khía cạnh 3: Loại dữ liệu (Data Types)
+
+* **IV_QTY_04 (Invalid):** Số thập phân/Số thực (Ví dụ: `1.5`, `2.0`). Giỏ hàng không thể chứa một nửa hay một phần sản phẩm.
+* **IV_QTY_05 (Invalid):** Chuỗi ký tự, chữ cái, hoặc ký tự đặc biệt (Ví dụ: `"abc"`, `"2+"`, `""`).
+
+#### Khía cạnh 4: Bảo mật & Tải hệ thống (Security & Overflow)
+
+* **IV_QTY_06 (Invalid):** Số nguyên cực lớn gây tràn băng thông lưu trữ dữ liệu (Integer Overflow - Ví dụ: `9999999999999999`). Kiểm tra xem hệ thống có bị lỗi logic tính toán tổng tiền đơn hàng hay không.
+
+---
+
+### 🔹 Đối với biến `product_id` (Định danh sản phẩm)
+
+Do `product_id` đóng vai trò là một khóa ngoại (Foreign Key) truy vấn vào cơ sở dữ liệu SQLite, các phân vùng sẽ tập trung vào tính toàn vẹn dữ liệu và an toàn truy vấn.
+
+#### Khía cạnh 1: Trạng thái tồn tại của dữ liệu (Data Existence)
+
+* **V_PID_01 (Valid):** ID của sản phẩm đang hoạt động và tồn tại thực tế trong DB.
+* **IV_PID_01 (Invalid):** ID không tồn tại trong hệ thống (Ví dụ: ID quá lớn như `999999` hoặc một mã ngẫu nhiên).
+* **IV_PID_02 (Invalid):** ID trống (`""`, `null`, `undefined`).
+
+#### Khía cạnh 2: Loại dữ liệu (Data Types)
+
+* **IV_PID_03 (Invalid):** ID sai kiểu dữ liệu gốc (Ví dụ: truyền chuỗi chữ `"đien-thoai-iphone"` thay vì số ID).
+
+#### Khía cạnh 3: Bảo mật & Tấn công lỗ hổng
+
+* **IV_PID_04 (Invalid):** Bơm câu lệnh SQL Injection thông qua trường ID sản phẩm (Ví dụ: `1 OR 1=1` hoặc `1; DROP TABLE products;--`). Kiểm tra xem backend có tuân thủ cơ chế an toàn **SEC-05** (Parameterized Query) hay không.
+
+---
+
